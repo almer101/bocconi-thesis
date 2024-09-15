@@ -43,9 +43,7 @@ The thesis provides an in-depth exploration of the Hull-White model, extending t
 
 - **Swaption Pricing**:  
    The thesis also delves into swaption pricing using a binomial tree for the short-rate process. The price of a swaption is computed as:
-   $$
-   Swaption(t) = \mathbb{E}_t^\mathbb{Q} \left[ D(t,T) (IRS(T))^+ \right]
-   $$
+   $$Swaption(t) = \mathbb{E}_t^\mathbb{Q} \left[ D(t,T) (IRS(T))^+ \right]$$
    where $IRS(T)$ is the value of the interest rate swap at maturity $T$, and the binomial tree is built using the discretized form of the Hull-White process.
 
 - **Results**:  
