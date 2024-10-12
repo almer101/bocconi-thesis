@@ -1,0 +1,985 @@
+\documentclass[titlepage, 12pt]{article}
+
+\usepackage{amsmath, amsfonts, amssymb} % better math
+\usepackage{enumitem} % better lists
+\usepackage{geometry} % margins
+\usepackage{graphicx} % scaling
+\usepackage{hyperref} % hyperlinks
+\usepackage{multicol} % multiple columns
+\usepackage{parskip} % paragraph spacing
+\usepackage{scrlayer-scrpage} % page foot
+\usepackage{tikz} % plots
+\usetikzlibrary{positioning}
+\usetikzlibrary{trees} % Library for trees
+\usetikzlibrary{arrows.meta, decorations.pathmorphing}  % For better arrow customization
+\usepackage{titlesec} % titles
+\usepackage{pdfpages}
+\usepackage{verbatim}
+\usepackage[affil-it]{authblk}
+\usepackage{booktabs}  % For better looking tables
+\usepackage{float}
+\usepackage{listings}  % For code listings
+\usepackage{xcolor}    % For color customization
+
+\lstset{
+	backgroundcolor=\color{white},   % Background color
+	basicstyle=\ttfamily\small,      % Code font and size
+	keywordstyle=\color{blue},       % Keywords in blue
+	commentstyle=\color{gray},       % Comments in gray
+	stringstyle=\color{orange},      % Strings in orange
+	numberstyle=\tiny\color{gray},   % Line numbers style
+	identifierstyle=\color{black},   % Variable names in black
+	breaklines=true,                 % Break long lines
+	columns=fullflexible,            % Better spacing
+	frame=lines,                     % Top and bottom lines around code
+	numbers=left,                    % Line numbers on the left
+	numbersep=10pt,                  % Space between code and line numbers
+	showstringspaces=false,          % Do not display string spaces
+	tabsize=4,                       % Tab size
+	morekeywords={def,return},       % Additional keywords
+}
+
+% ----- random seed -----
+\pgfmathsetseed{12}
+
+% ----- custom commands -----
+\newcommand{\E}{\mathrm{E}}
+\newcommand{\se}{\mathrm{se}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Corr}{\mathrm{Corr}}
+\newcommand{\SSR}{\mathrm{SSR}}
+\newcommand{\SSE}{\mathrm{SSE}}
+\newcommand{\SST}{\mathrm{SST}}
+\newcommand{\tr}{\mathsf{T}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\R}{\mathbb{R}}
+\renewcommand{\P}{\mathbb{P}}
+\newcommand{\Var}[1]{\mathbb{V}ar\left[#1\right]}
+\newcommand{\condexpec}[2]{\mathbb{E}^\mathbb{#1}\left[#2\right]}
+\newcommand{\condexpect}[3]{\mathbb{E}^\mathbb{#1}_{#2}\left[#3\right]}
+\newcommand{\bmat}{\left[\begin{array}}
+	\newcommand{\emat}{\end{array}\right]}
+
+\newcommand{\theorem}[2]{\textbf{Theorem: #1}\\\textit{#2}\begin{flushright}$\blacksquare$\end{flushright}}
+
+% Title Page
+\title{\textbf{Application of the Heath-Jarrow-Morton Framework to Pricing Interest Rate Derivatives}}
+\author{Ivan Almer}
+\affil{Master of Quantitative Finance and Risk Management\\Bocconi University\\Milan, Italy\vspace{0.5cm}\\Supervisor: Francesco Rotondi}
+%\geometry{left=1cm, right=1cm, top=2cm, bottom=2cm}
+\pagestyle{plain} % moves page numbering to bottom center
+\date{September 8, 2024}
+
+\begin{document}
+	\maketitle
+	
+	\begin{abstract}
+		This work investigates the practical application of the Hull-White model, part of the Heath-Jarrow-Morton (HJM) family of models, for pricing interest rate derivatives such as caplets and swaptions. Although extensively studied in theory, the real-world application of this model is less explored. The research involves deriving pricing formulas, calibrating the model using market data, and constructing a binomial tree for swaption pricing. By bridging the gap between theoretical knowledge and market practice, this work offers insights into the model's effectiveness and limitations in real financial markets.
+	\end{abstract}
+	
+	\tableofcontents
+	\newpage
+	
+	\section{Introduction}\label{introduction}
+	
+	Interest rate derivatives, such as caplets and swaptions, play a crucial
+	role in financial markets, enabling institutions to hedge interest rate
+	risks and speculate on future rate movements. Being able to price these
+	derivatives accurately is essential to both risk management and market
+	efficiency. Over the years, many models were developed to capture the
+	complexities of interest rate movements and to price these instruments.
+	Among these models there is a family of models that stands out called
+	Heath-Jarrow-Morton (HJM) framework. These models elegantly overcome the
+	difficulties of fitting the model to the term structure of interest
+	rates observed in the market and allow the modeling of the entire yield
+	curve.
+	
+	Hull-White extension of the Vasicek model will be used as a focal point
+	of this work, as it combines the flexibility of the HJM framework with
+	the tractability of the Vasicek model, making it a powerful tool for
+	pricing interest rate derivatives. While the model has been widely
+	studied in academic literature, its practical application to real-world
+	market data is often less emphasized in classroom settings. This gap
+	between theory and practice presents an opportunity for further
+	exploration.
+	
+	The objective of this work is to extend the theoretical knowledge
+	acquired in the classroom by exploring a model from the HJM framework
+	for pricing interest rate derivatives, specifically caps (caplets) and
+	swaptions. The goal is to move beyond textbook examples by implementing
+	the model, calibrating it with real-world market data, and assessing its
+	practical applicability and performance. Through this investigation, our
+	work aims to bridge the gap between academic theory and real-world
+	financial markets, providing insights into the model's effectiveness and
+	limitations in actual practice.
+	
+	The work is divided into three main parts. First, the model is chosen,
+	and the expressions for cap (caplet) pricing are derived, laying the
+	groundwork for calibration. Second, the model is calibrated to fit
+	market data, ensuring its parameters are aligned with actual financial
+	conditions. Finally, a binomial tree is constructed to price a swaption, and the results are compared to market prices.
+	
+	By extending beyond the theoretical constructs learned in class,
+	this work aims to provide a practical perspective on the use of the
+	Hull-White model in financial markets. The results of this investigation
+	will contribute to a better understanding of the model's strengths and
+	weaknesses.
+	
+	\section{Theoretical Framework}\label{theoretical-framework}
+	\subsection{Hull-White extension of the Vasicek Model}
+	Hull-White model is an extension of the Vasicek short-rate model. The
+	short rate under the Vasicek model follows a mean-reverting process that
+	is characterized by the following stochastic differential equation
+	(SDE):
+	$$dr_t = k(\theta - r_t)dt + \sigma dW_t$$
+	where \(W_t\) is a Brownian motion under the risk-neutral probability
+	measure \(\mathbb{Q}\), parameter \(k\) is called the speed of mean
+	reversion, \(\theta\) is the long-run mean of the short rate, and
+	\(\sigma\) is the volatility of the short rate. One can easily get an
+	expression for the short rate at time \(t\), by applying Ito's lemma to the
+	function \(h\) of time and the short rate:
+	\[h(t, r_t) = e^{kt}r_t.\]
+	The result is that the short rate \(r_t\) is normally
+	distributed. Moreover, there exists a closed-form solution for the price
+	\(P(t,T)\) at time \(t\) of a zero-coupon bond that matures at time
+	\(T\). While this allows us to calibrate the Vasicek model to the term
+	structure, this model can have difficulties because the model parameters
+	\((k,\theta,\sigma)\) are assumed to be constant. Hull-White model
+	generalizes this by allowing the mean reversion level to be
+	time-dependent. Specifically, the short rate under Hull-White follows a
+	similar stochastic differential equation as Vasicek, but with a
+	time-dependent long-run mean \(\theta(t)\) (we will also be denoting it with $\theta_t$):
+	\[\theta_t: \R^+\rightarrow \mathbb{R}.\]
+	This adjustment provides the flexibility needed to match the observed
+	interest rate curves more accurately while retaining the tractability of
+	the original Vasicek framework.	Essentially, the short rate under the Hull-White model follows the below
+	SDE:
+	\[dr_t = k(\theta_t - r_t)dt + \sigma dW_t\]
+	where the long-run mean parameter \(\theta_t\) is given by the
+	expression:
+	\begin{equation}\label{eq:theta_hw}
+		\theta_t = f(0,t) + \frac{1}{k}\frac{\partial f(0,t)}{\partial t}+\frac{\sigma^2}{2k^2}(1-e^{-2kt})
+	\end{equation}
+	where \(f(0,t)=f_t\) is the instantaneous forward rate, which can be
+	obtained from the zero-curve observed in the market. It is assumed
+	that the current ZCB prices satisfy the forward rate term structure. Then the expression for the today's price $P(0,T)$ of a ZCB maturing at time $T$ is given by:
+	\begin{equation}\label{eq:bond_price_f}
+		P(0,T) = e^{-\int_0^Tf_u du}
+	\end{equation}
+	We can rework this equation to get an expression for \(f_t\). If we take the natural logarithm of both sides and then take the derivative of both sides with respect to $T$ we get:
+	\begin{equation}
+		\begin{split}
+			P(0,T) = e^{-\int_0^Tf_u du} \\
+			\ln P(0,T) = -\int_0^Tf_u du \\
+			\frac{\partial}{\partial T}\ln P(0,T) = - f_T .
+		\end{split}
+	\end{equation}
+	
+	This gives us the final expression for the instantaneous forward rate:
+	$$f_t = -\frac{\partial}{\partial t}\ln P(0,t).$$
+	To obtain the expression for $\theta_t$, one could choose to take two routes. In the next section, we will in short describe the idea behind the derivation and hint at the usage of the famous HJM expression for the drift to reach the final expression for $\theta_t$. This derivation is not in the scope of this work, but we will provide it in the appendix for the reader who may be interested in the details.
+	
+	Before we move to the the derivation, we provide below the final expression for the bond price $P(t,T)$ under Hull-White model as given by Brigo and Mercurio~\cite{brigo_mercurio2013} (the derivation is not a part of this work):
+	\begin{equation}\label{eq:hw_bond_price_full_expression}
+		P(t, T)=A(t, T) e^{-B(t, T) r_t}
+	\end{equation}
+	where
+	\begin{equation}\label{eq:hw_ab}
+		\begin{split}
+			A(t, T)&=\frac{P^M(0, T)}{P^M(0, t)} \exp \left\{B(t, T) f^M(0, t)-\frac{\sigma^2}{4 k}\left(1-e^{-2 k t}\right) B(t, T)^2\right\} \\
+			B(t, T)&=\frac{1}{k}\left[1-e^{-k(T-t)}\right]
+		\end{split}
+	\end{equation}
+	where with $(f^M(0,t),\forall t\geq 0)$ we denote the forward rate term structure observable in the market, that is, derived from the ZCB market prices that we denote with $(P^M(0,t),\forall t\geq 0)$, and where $k$ and $\sigma$ are Hull-White model parameters representing mean-reversion speed and volatility, respectively.
+	
+	\subsection{Idea behind the derivation of $\theta_t$}\label{idea-behind-the-derivation}
+	
+	One of the strengths of the Vasicek (Hull-White) model is its tractability, meaning that it can be solved analytically and offers a closed-form solution for the bond price \( P(t,T) \). This is a crucial feature, as it allows for efficient pricing of various interest rate derivatives, making it a preferred choice in both academic research and practical financial engineering. It can be shown that the expression for \( P(t,T) \) looks as follows:
+	\begin{equation}\label{eq:bond_price_model}
+		P(t,T) = A(t,T)e^{-B(t,T)r_t}
+	\end{equation}
+	where \( A(t,T) \) and \( B(t,T) \) are functions of times \( t \) and \( T \), as well as parameters of the model \( k, \theta_t, \sigma \). Here, \( A(t,T) \) and \( B(t,T) \) encapsulate the deterministic parts of the model, while the exponential term represents the stochastic component driven by the short rate \( r_t \). This decomposition is particularly valuable because it separates the randomness in the interest rate dynamics from the deterministic factors that influence bond prices. If the model needs to fit the current term structure, then the price obtained with equation \eqref{eq:bond_price_f} must equal the price obtained from the model \eqref{eq:bond_price_model}.
+%	\begin{equation}
+%		\begin{split}
+%			P(t,T) = e^{-\int_t^Tf_u du}
+%		\end{split}
+%	\end{equation}
+
+	By equating both expressions and performing some manipulation, we can express the parameter \( \theta_t \) as a function of other variables, yielding expression \eqref{eq:theta_hw}. This step is crucial, as \( \theta_t \) essentially acts as the market's mean-reverting level, ensuring that the model is calibrated to reflect the observed yield curve accurately. Without proper calibration, the model would not correctly replicate the real-world interest rate environment, leading to pricing errors.
+	
+	The same result can be obtained (even more elegantly) by using the general formula proposed by Heath-Jarrow-Morton (HJM) in their framework. The HJM framework provides a powerful and flexible approach to modeling the entire term structure of interest rates directly, without specifying the dynamics of a short rate. This contrasts with short-rate models like Hull-White, where the short rate's dynamics are specified first, and the yield curve is derived as a consequence. HJM assume in their framework that for every fixed \( T > 0 \), the forward rate \( f(\cdot,T) \) has a stochastic differential under the risk-neutral measure \( \mathbb{Q} \), which is given by:
+	\begin{equation}
+		\begin{split}
+			df(t,T) &= \alpha(t,T)dt + \sigma(t,T)dW(t) \\
+			f(0,T) &= f^M(0,T)
+		\end{split}
+	\end{equation}
+	where \( f^M(0,T) \) is the instantaneous forward rate for time \( T \) observable in the market, and \( W \) is a Brownian motion under \( \mathbb{Q} \). The forward rate \( f(t,T) \) is central to the HJM framework, as it directly governs the evolution of interest rates for future maturities. Heath, Jarrow and Morton propose in their framework that the drift \( \alpha \) of the process $f(t,T)$ must satisfy a certain condition if we want the two pricing formulae to hold simultaneously:
+	\begin{equation}
+		\begin{split}
+			P(0,T) &= \mathbb{E}^\mathbb{Q} \left[ e^{-\int_0^T r_u du} \right] \\
+			P(0,T) &= e^{-\int_0^T f_u du}.
+		\end{split}
+	\end{equation}
+	In \cite{bjork2019arbitrage} it is stated that under the risk-neutral measure \( \mathbb{Q} \), the processes \( \alpha \) and \( \sigma \) must satisfy the following relation for every \( t \) and \( T \geq t \):
+	\begin{equation}\label{eq:hjmdrift}
+		\alpha(t,T) = \sigma(t,T)\int_t^T\sigma'(t,u)du
+	\end{equation}
+	This result emphasizes that the drift of the forward rate is intrinsically linked to the volatility structure, ensuring that no arbitrage opportunities exist. By applying this relationship, we can derive the drift term \( \theta_t \) in the Hull-White model, which guarantees consistency between the short-rate model and the observed term structure.
+	
+	Details and the complete derivation of the expression for \( \theta_t \) can be found in the appendix.
+	
+	\section{Model Calibration}\label{model-calibration}
+	
+	In the following section, we will focus on the process of calibrating the Hull-White model to caplet prices observed in the market. Calibration is an important step that involves adjusting the model parameters (in our case $k$ and $\sigma$) to align with real-world data, ensuring that the model accurately reflects market conditions.
+	
+	In this work we will operate in the single-curve framework, meaning that we will use the same rate for discounting and as a reference rate for our derivatives (caplets and swaptions). This is a simplification, but it will still serve the reader to gain a solid understanding of interest rate derivative pricing.
+	
+	To effectively calibrate the Hull-White model, we first need to provide a clear understanding of what a caplet is and how it is priced. A caplet is a type of interest rate derivative, specifically a European-style option, which provides protection against rising interest rates over a specific period. It is essentially one leg of an interest rate cap, which consists of a series of caplets.
+	
+	In this section, we will begin by explaining the mechanics of a caplet, including how it functions and its payoff structure. Following that, we will derive the formula for pricing a caplet within the Hull-White framework, highlighting the role of the model's parameters in determining the price. With this foundation in place, we will proceed to discuss the calibration process, where we will match the model to observed market caplet prices by adjusting the Hull-White model parameters to best fit the data.
+	
+	By the end of this section, the reader will have a clear understanding of both the theoretical aspects of caplet pricing and the practical steps involved in calibrating the Hull-White model to real market conditions.
+	
+	\subsection{Caps}
+	
+	A \textbf{cap} is a stream of options called \textbf{caplets} that written on some reference rate. Let us consider a caplet with the following characteristics:
+	\begin{itemize}
+		\item Start date: $T_0=0$
+		\item Fixing date (date when the reference rate is observed): $T_1>T_0$
+		\item Maturity date (date when the payoff is received): $T_2> T_1$
+		\item Payoff: $\tau(T_1,T_2)(L(T_1,T_2)-K)^+$
+	\end{itemize}
+	
+	where $L(T_1,T_2)$ is the reference spot rate that we observe at the fixing date $T_1$, and $K$ is the strike determined by the caplet contract. See the below figure (\ref{fig:caplet}) illustrating the timeline of a caplet:
+	\begin{figure}[h!]\label{fig:caplet}
+		\begin{center}
+			\begin{tikzpicture}
+				% Draw the horizontal line with an arrow at the end
+				\draw[thick, ->] (0,0) -- (10,0);
+				% Time marks and labels
+				\foreach \x/\label in {0/{$T_0=0$}, 5/{$T_1$}, 9/{$T_2$}} {
+					% Draw vertical tick marks
+					\draw[thick] (\x cm, 0.2cm) -- (\x cm, -0.2cm);
+					% Draw labels
+					\node[below] at (\x cm, -0.2cm) {\label};
+				}
+				\node[above] at (5 cm, +0.2cm) {$L(T_1, T_2)$};
+			\end{tikzpicture}
+		\end{center}
+		\caption{Timeline of a caplet}
+	\end{figure}
+	
+	The discounted payoff of such a contract is
+	
+	$$D(0,T_2)\tau(T_1,T_2)(L(T_1,T_2)-K)^+$$
+	
+	where $D(0,T_2)$ is the stochastic discount factor for the period from today ($t=0$) to the maturity of the caplet $T_2$.
+	
+	Let us now consider a cap starting at time $T_0=0$ and payment dates $\{T_1, T_2,...,T_b\}$. This is a series of caplets maturing at those payment dates. See the figure below which depicts the timeline of a cap:
+	\begin{center}
+		\begin{tikzpicture}
+			% Draw the horizontal line with an arrow at the end
+			\draw[thick, ->] (0,0) -- (13,0);
+			% Time marks and labels
+			\foreach \x/\label/\otherlabel in {0/{$T_0=0$}/{$L(0,T_1)$}, 2/{$T_1$}/{$L(T_1,T_2)$}, 4/{$T_2$}/{$L(T_2,T_3)$}} {
+				% Draw vertical tick marks
+				\draw[thick] (\x cm, 0.2cm) -- (\x cm, -0.2cm);
+				% Draw labels
+				\node[below] at (\x cm, -0.2cm) {\label};
+				\node[above] at (\x cm, 0.2cm) {\otherlabel};
+			}
+			\node[below] at (7 cm, -0.2cm) {$\cdots$};
+			\foreach \x/\label/\otherlabel in {10/{$T_{b-1}$}/{$L(T_{b-1},T_b)$}, 12/{$T_b=T$}/{}} {
+				% Draw vertical tick marks
+				\draw[thick] (\x cm, 0.2cm) -- (\x cm, -0.2cm);
+				% Draw labels
+				\node[below] at (\x cm, -0.2cm) {\label};
+				\node[above] at (\x cm, +0.2cm) {\otherlabel};
+			}
+		\end{tikzpicture}
+	\end{center}
+	
+	The discounted payoff of such a cap contract at time zero is simply the sum of the discounted payoffs of caplets that constitute it:
+	
+	\begin{equation}
+		\sum_{i=1}^b D(0,T_i)\tau(T_{i-1}, T_i)\left(L(T_{i-1}, T_i) - K\right)^+
+	\end{equation}
+	
+	\subsection{Black Cap Price}
+	
+	Now a question poses itself on how to price such a contract. One of the models used by the market participants to price caps is the log-normal model (also known as the Black model). In this subsection, we will introduce the Black pricing model for caps as that will be our reference when calibrating the Hull-White model. When we talk about pricing, as with all derivatives, the fair value of the contract can be calculated by taking the risk-neutral expectation of the payoff, that is:
+	
+	\begin{equation}\label{eq:cap_price}
+		Cap(0) = \sum_{i=1}^b \condexpec{Q}{D(0,T_i)\tau(T_{i-1}, T_i)\left(L(T_{i-1}, T_i) - K\right)^+}
+	\end{equation}
+	
+	Since here we are talking about interest rate derivatives, the discount factor $D(0,T_i)$ and the payoff $(L(T_{i-1}, T_i) - K)^+$ are not independent anymore, as is the case with equity options. For this reason, we cannot easily separate the discount and the payoff term. To resolve this issue we will have to resort to the change of measure technique, and to do that we will rely on the Girsanov theorem. We are already acquainted with the (static) expectation rule for any two probability measures, which tells us the relationship between the expectations under different probability measures. The static expectation rule is given by
+	\begin{equation}
+		\condexpec{P}{X} = \condexpec{Q}{X\frac{d\P}{d\Q}}
+	\end{equation}
+	where $X$ is a random variable and $\frac{d\P}{d\Q}$ is the Radon-Nikodym derivative of the probability measure $\P$ with respect to the probability measure $\Q$. In the dynamic setting, the expectation rule is given by
+	\begin{equation}
+		\condexpect{P}{t}{X(T)} = \left(\frac{d\P}{d\Q}(t)\right)^{-1}\condexpect{Q}{t}{X(T)\frac{d\P}{d\Q}(T)},
+	\end{equation}
+	or more compactly with $M(t)=\frac{d\P}{d\Q}(t)$,
+	\begin{equation}\label{eq:dynamic_exp_rule}
+		\condexpect{P}{t}{X(T)} = \condexpect{Q}{t}{X(T)\frac{M(T)}{M(t)}} = \frac{\condexpect{Q}{t}{X(T)M(T)}}{M(t)}.
+	\end{equation}
+	
+	In the case of the cap payoff, the correct way to separate expectations is given by the following Radon-Nikodym derivative
+	\begin{equation}
+		M(t)=\frac{d\Q^T}{d\Q}(t)=\frac{D(0,t)P(t,T)}{P(0,T)}.
+	\end{equation}
+	
+	Where $\Q^T$ is called the $T$-forward measure, as it depends on the time $T$. One of the simplest ways that the forward measure comes in play is the forward rate. Formally, the forward rate $F(t,T_{i-1},T_i)$ is defined as the conditional $\Q^{T_i}$ expectation of the spot rate $L(T_{i-1},T_i)$:
+	\begin{equation}
+		F(t,T_{i-1},T_i) = \mathbb{E}^{\mathbb{Q}^{T_i}}_t\left[L(T_{i-1},T_i)\right], \forall t< T_{i-1}.
+	\end{equation}
+	Moreover, the forward rate from above is a martingale under the $T_i$-forward measure, which is important for the derivation of the Black formula.
+	
+	Let us now see how we can apply this to our case of caps. We consider the equation~\eqref{eq:cap_price} from above and let us express it as an expectation under the $T_i$-forward measure by employing the dynamic expectation rule~\eqref{eq:dynamic_exp_rule}:
+	\begin{equation}
+		\begin{split}
+			Cap(0) &= \sum_{i=1}^b \condexpec{Q}{D(0,T_i)\tau(T_{i-1}, T_i)\left(L(T_{i-1}, T_i) - K\right)^+} \\
+			&= \sum_{i=1}^b \frac{\condexpec{Q^\mathit{T_i}}{D(0,T_i)\tau(T_{i-1}, T_i)\left(L(T_{i-1}, T_i) - K\right)^+\frac{P(0,T_i)}{D(0,T_i)P(T_i,T_i)}}}{\frac{P(0,T_i)}{D(0,0)P(0,T_i)}} \\
+			&= \sum_{i=1}^b P(0,T_i)\tau(T_{i-1}, T_i)\condexpec{Q^\mathit{T_i}}{\left(L(T_{i-1}, T_i) - K\right)^+} \\
+		\end{split}
+	\end{equation}
+	By doing this we managed to separate the discounting factor and the payoff. As already mentioned earlier, the forward rate $F_i(t)=F(t,T_{i-1}, T_i)$ is martingale under the $T_i$-forward measure. For this reason, $F_i(t)$ is modeled as a driftless diffusion:
+	\begin{equation}
+		dF_i(t) = F_i(t)\sigma_idW^i_t
+	\end{equation}
+	where $W^i_t$ is the standard Brownian motion under the $T_i$-forward measure. Also it is important to note that $F_i(T_{i-1}) = F(T_{i-1}, T_{i-1}, T_i) = L(T_{i-1}, T_i)$. Then the quoted Black market price of a cap is:
+	\begin{equation}
+		Cap(0) = \sum_{i=1}^b P(0,T_i)\tau(T_{i-1}, T_i)Black\left(F_i(0), K, \sigma_i\sqrt{T_{i-1}}\right).
+	\end{equation}
+	Here $\sigma_i$ is the market implied volatility quoted in the market and
+	\begin{equation}
+		\begin{split}
+			Black(F,K,v) = FN(d_1) - KN(d_2) \\
+			d_1 = \frac{\ln\left(\frac{F}{K}\right)+\frac{1}{2}v^2}{v} \text{ and } d_2 = d_1 - v\\
+		\end{split}
+	\end{equation}
+	
+	This is all we need to calculate the Black prices of a cap quoted in the market. The next step is to show how to calculate the Hull-White price of a cap. That will allow us to fine-tune parameters of the Hull-White model $(k,\sigma)$ such that the Hull-White price of the cap corresponds to the Black price quoted in the market. 
+	
+	\subsection{Hull-White Cap Price}
+	
+	Before we dive into the details of computing the cap price under the Hull-White model, let us show how the price of a caplet is equal to the price of a European zero-coupon put option. This result will be crucial in deriving the price of the cap under the analytically tractable Hull-White model. Let us consider a caplet with a fixing date $T_{i-1}$, maturity $T_i$, strike $K$ and notional $N$. Then the price at time $t\leq T_{i-1}$ is obtained as
+	\begin{equation}
+		\begin{split}
+			\mathbf{Cpl}(t,T_{i-1},T_i,N,K) &= \condexpect{Q}{t}{D(t,T_i)\cdot N\cdot\tau(T_{i-1},T_{i})\cdot(L(T_{i-1},T_{i})-K)^+} \\
+			&= N\cdot\condexpect{Q}{t}{D(t,T_{i-1})P(T_{i-1},T_i) \tau(T_{i-1},T_{i})(L(T_{i-1},T_{i})-K)^+}. \\
+		\end{split}
+	\end{equation}
+	
+	Now we can use the definition of an IBOR rate:
+	\begin{equation}
+		L(T_{i-1},T_i)=\frac{1}{\tau(T_{i-1}, T_i)}\left( \frac{1}{P(T_{i-1},T_i)} - 1 \right),
+	\end{equation}
+	and plug it into the equation above, so that we get
+	\begin{equation}
+		\begin{split}
+			\mathbf{Cpl}(t,&T_{i-1},T_i,N,K) \\ &=N\cdot\condexpect{Q}{t}{D(t,T_{i-1})P(T_{i-1},T_i) \tau(T_{i-1},T_{i})\left(\frac{1}{\tau(T_{i-1}, T_i)}\left( \frac{1}{P(T_{i-1},T_i)} - 1 \right)-K\right)^+} \\
+			&= N\cdot\condexpect{Q}{t}{D(t,T_{i-1})P(T_{i-1},T_i) \left( \frac{1}{P(T_{i-1},T_i)} - (1 +K\tau(T_{i-1},T_{i}))\right)^+} \\
+			&= N\cdot\condexpect{Q}{t}{D(t,T_{i-1})\left(1 - P(T_{i-1},T_i)(1 +K\tau(T_{i-1},T_{i}))\right)^+} \\
+			&= N\cdot\condexpect{Q}{t}{D(t,T_{i-1})(1 +K\tau(T_{i-1},T_{i}))\left(\frac{1}{1 +K\tau(T_{i-1},T_{i})} - P(T_{i-1},T_i)\right)^+} \\
+			&= N(1 +K\tau(T_{i-1},T_{i}))\cdot\condexpect{Q}{t}{D(t,T_{i-1})\left(\frac{1}{1 +K\tau(T_{i-1},T_{i})} - P(T_{i-1},T_i)\right)^+} \\
+			&= N'\cdot\condexpect{Q}{t}{D(t,T_{i-1})\left(K' - P(T_{i-1},T_i)\right)^+}.
+		\end{split}
+	\end{equation}
+	Finally, we can write the price of a caplet in terms of a price of a zero-coupon bond put option:
+	\begin{equation}
+		\mathbf{Cpl}(t,T_{i-1},T_i,N,K) = N'\cdot\mathbf{ZBP}(t,T_{i-1},T_i,K')
+	\end{equation}
+	where $N'$ and $K'$ are the notional and strike of the put option:
+	\begin{equation}
+		\begin{split}
+			K' &= \frac{1}{1+K\tau_i} \\
+			N' &= N(1 +K\tau_i),
+		\end{split}
+	\end{equation}
+	while we use the following abbreviation of notation: $\tau_i = \tau(T_{i-1}, T_i).$
+	
+	What is clear from the formula, but it is important to note, is that the maturity of the caplet is $T_i$, while the maturity of the put option is $T_{i-1}$. Now we have all the ingredients to price our caplet following the formula derived by Brigo and Mercurio~\cite{brigo_mercurio2013} for the price at time $t$ of a zero-coupon put option with strike $K$ that matures at time $T$, and where $S$ is the maturity of the related caplet. Under the Hull-White model that expression is given by
+	\begin{equation}
+		\mathbf{ZBP}(t,T,S,K) = KP(t,T)\Phi(-h+\sigma_p) - P(t,S)\Phi(-h)
+	\end{equation}
+	where
+	\begin{equation}
+		\begin{split}
+			\sigma_p &= \sigma\sqrt{\frac{1-e^{-2k(T-t)}}{2k}}B(T,S)\\
+			h &= \frac{1}{\sigma_p}\ln\left(\frac{P(t,S)}{P(t,T)K}\right) + \frac{\sigma_p}{2}
+		\end{split}
+	\end{equation}
+	and $\Phi$ is the cumulative distribution function of the standard normal random variable, while $B(T,S)$ was introduced earlier in \eqref{eq:hw_ab}, and $k$ and $\sigma$ are the parameteres of the Hull-White model. Putting it all together we get the expression for the time $t$ price of a cap with a strike $K$ and notional $N$, maturing at time $T_b$:
+	\begin{equation}
+		\begin{split}
+			\mathbf{Cap}(t,T_b,N,K) &= \sum_{i=1}^b \mathbf{Cpl}(t,T_{i-1},T_i,N,K) \\
+			&= N\sum_{i=1}^b (1+K\tau_i)\cdot\mathbf{ZBP}\left(t,T_{i-1},T_i,\frac{1}{1+K\tau_i}\right) \\
+			&= N\sum_{i=1}^b \left[ P(t,T_{i-1})\Phi(-h_i+\sigma_p^i) - (1+K\tau_i)P(t,T_i)\Phi(-h_i) \right]
+		\end{split}
+	\end{equation}
+	
+	\subsection{Market Data}
+	Now that we have all the ingredients we will focus on the calibration of the Hull-White model to market prices of caps and caplets. Calibration is a critical step that involves adjusting the model parameters so that the theoretical prices generated by the Hull-White model match the observed market prices. Accurate calibration ensures that the model reflects real-world market conditions and can be used for reliable pricing and risk management of interest rate derivatives. We will first introduce the market data used for calibration, followed by a detailed explanation of the calibration methodology, including the optimization techniques employed to minimize the pricing error between the model and market prices. 
+	
+	For the calibration of the Hull-White model, we use market data from interest rate caps, which are financial derivatives that provide protection against rising interest rates. Specifically, the data includes caplet volatilities quoted for various strikes, fixing dates, and maturities. The cap volatilities represent the market's expectation of future interest rate movements and are critical for accurately calibrating the model. Additionally, we use corresponding discount factors, which reflect the time value of money and are necessary for discounting the cash flows generated by the caplets. This data set allows us to adjust the Hull-White model parameters so that the model-generated prices match the observed market prices, ensuring that the model is aligned with current market conditions. Here is an example of the cap data taken from Bloomberg that contains for each cap the series of caplets that constitute it. For illustration purposes, we provide an example of a 30Y cap with a strike of $2.38\%$:
+	
+	\begin{table}[H]
+		\centering
+		\caption{Example of market data for Cap calibration from 2024-08-30}
+		\begin{tabular}{cccccc}
+			\toprule
+			\textbf{Strike (\%)} & \textbf{Volatility (\%)} & \textbf{Fixing} & \textbf{Maturity} & \textbf{Discount} & \textbf{Notional}\\
+			\midrule
+			2.38 & 27.4 & 2024-11-29 & 2025-03-03 & 0.9839 & 10,000,000 \\
+			2.38 & 28.1 & 2025-02-27 & 2025-06-03 & 0.9775 & 10,000,000 \\
+			2.38 & 29.5 & 2025-05-30 & 2025-09-03 & 0.9718 & 10,000,000 \\
+			\vdots & \vdots & \vdots & \vdots & \vdots & \vdots \\
+			2.38 & 39.3 & 2054-06-01 & 2054-09-03 & 0.4977 & 10,000,000\\
+			\bottomrule
+		\end{tabular}
+	\end{table}
+	
+	The pricing date is August 30th, 2024, which is also the data reference date. With data formatted in such a way, we can easily calculate the Black prices of caplets and sum them to get the price of the cap. The table above shows an example of one cap. The original dataset contains such tables for multiple caps, all with 30Y maturity, but different strikes. These streams of caplet data are fed to the Black pricing formula to get Black market prices. Black prices are then compared to Hull-White prices obtained as described in the previous section.
+	
+	\subsection{Calibration process}
+	
+	As already mentioned earlier, the calibration process encapsulates the search for the best set of parameters $(k,\sigma)$ of the Hull-White model, such that they are as close as possible to the Black market prices. Formally, the optimization process of minimizing the squared error between the model (Hull-White) and Black prices, can be formulated as follows:
+	\begin{equation}\label{eq:optimization}
+		\mathbf{\Theta} = \arg\min_{(k,\sigma)}\sum_{i=0}^L \left[\mathbf{Cap}^{HW}_i(0,T_b,N,K) - \mathbf{Cap}^{Black}_i(0,T_b,N,K)\right]^2
+	\end{equation}
+	
+	where $L$ is the number of caps we have in our dataset, and $\mathbf{\Theta}$ is the vector of optimal parameters $(k^*,\sigma^*)$. It is important to note that \eqref{eq:optimization} is often a non-convex optimization problem with many local minima, which makes it challenging to find a satisfying set of parameters. To remedy this, one can resort to running the optimization multiple times with different initial guesses for our parameters and inspect the final optimization errors that each result gives. We used the \textit{Nelder-Mead} procedure to tackle this optimization problem. 
+	
+	The Nelder-Mead optimization method is a widely used algorithm for finding the minimum of an objective function in a multidimensional space. It is a direct search method that does not require gradient information, making it particularly useful for problems where the objective function is not differentiable, noisy, or expensive to evaluate. The method works by maintaining a set of points (called a simplex) in the search space and iteratively updating this simplex based on the function values at its vertices. The updates involve operations such as reflection, expansion, contraction, and shrinking of the simplex to explore the search space and move towards the optimum. Nelder-Mead is known for its simplicity and robustness, although it may converge slowly or to a local minimum in some cases. Despite these limitations, it remains a popular choice for optimization problems where derivative information is unavailable or difficult to obtain, as is the case with our optimization problem. 
+	
+	%Below you can find the code snippet to perform such optimization:
+	%
+	%% TODO: insert code
+	%\begin{lstlisting}[language=Python, caption=Optimization]
+	%	def obj_func(x, cap):
+	%		k = x[0]
+	%		sigma = x[1]
+	%		r_t = r0
+	%		
+	%		diffs = np.zeros(len(cap))
+	%		
+	%		cap_price_HW = cap_HW(cap,k,sigma,r_t)
+	%		cap_price_black = cap_black(cap)
+	%		
+	%		return (cap_price_HW - cap_price_black)**2
+	%		
+	%	bnds = ((0,None),(0,None))
+	%	initialGuess = np.array([0.2,0.2])
+	%	
+	%	result = minimize(obj_func, initialGuess, args=(cap), bounds = bnds, method = 'Nelder-Mead', tol=1e-04)
+	%	
+	%	optPar = result.x
+	%	
+	%	kstar = optPar[0]
+	%	sigma_star = optPar[1]
+	%\end{lstlisting}
+	
+	After calibrating the parameters we can use the obtained optimal values $(k^*,\sigma^*)$ to generate some sample paths of the process $r_t$, which is characterized by the following SDE:
+	
+	\begin{equation}
+		dr_t = k^*\left( \theta_t - r_t \right)dt + \sigma^* dW_t
+	\end{equation}
+	
+	where $\theta_t$ is the time-dependent long-run mean of the short rate $r_t$:
+	
+	\begin{equation}
+		\theta_t = f(0,t) + \frac{1}{k^*}\frac{\partial f(0,t)}{\partial t} + \frac{(\sigma^*)^2}{2(k^*)^2}\left(1-e^{-2tk^*}\right).
+	\end{equation}
+	
+	For illustration purposes, we include below a few sample paths of the short rate $r_t$ with an addition of the time-dependent $\theta_t$:
+	
+	\begin{figure}[H]
+		\centering
+		\input{plots/paths.pgf}
+		\caption{Sample paths of the short rate $r_t$ during 30 years}
+		\label{fig:sample_paths}
+	\end{figure}
+	
+	One of the things that a reader might find interesting is that the calibrated model managed to capture the amount of rate cuts the market is currently pricing at the time of writing this (end of August 2024). Virtually all the simulated paths follow a sharp downward trend in the first two years, after which the trend stabilizes.
+	
+	What is more, models belonging to HJM framework by definition fit the initial term structure observed in the market. To show that this very important characteristic holds true in this case as well we include the chart below which compares the ZCB prices observed in the market $P^M(0,t)$ and prices obtained by the Hull-White model $P^{HW}(0,t)$:
+	
+	\begin{figure}[h]
+		\centering
+		\input{plots/term_structure_fit.pgf}
+		\caption{Comparison of market and Hull-White ZCB prices}
+		\label{fig:tsm_fit}
+	\end{figure}
+	
+	
+	\section{Swaption Pricing}\label{swaption-pricing}
+	
+	\subsection{Interest Rate Swap (IRS)}\label{interest-rate-swap}
+	
+	In this subsection, we introduce the concept of interest rate swaps, which are fundamental financial instruments used to manage interest rate risk. An interest rate swap is a contract between two parties to exchange a series of cash flows based on differing interest rates. Typically, one party pays a fixed interest rate while the other pays a floating rate, often tied to a reference rate like LIBOR or EURIBOR. Interest rate swaps play a crucial role in the financial markets, as they allow institutions to hedge against fluctuations in interest rates and achieve desired exposure to fixed or floating rates. Understanding the mechanics of interest rate swaps is essential, as they form the basis for more complex derivatives, such as swaptions. In the following sections, we will explore how the valuation and pricing of interest rate swaps are directly related to swaptions, which are options written on swaps.
+	
+	In the illustration below one can see the visualised two legs of the interest rate swap. It is important to note that those payments do not have to have the same frequency, nor do they need to have the same payment dates (as is the case in the illustration below). What is important is that $T_0^x = T_0$ and $T_c^x=T_b$, that is the last payment date for the two legs of the swap match, and that the start date is the same for both legs.
+	
+	\begin{center}
+		\begin{tikzpicture}[x=1cm, y=1cm]
+			
+			% Draw the timeline with an arrow at the end
+			\draw[thick, ->] (0,0) -- (14,0);  % Horizontal line (timeline) with arrow
+			
+			% Add the time labels
+			\foreach \x/\label in {2/$T_1$, 4/$T_2$, 6/$T_3$, 8/$T_4$, 10/$T_5$, 12/$T_c$} {
+				\draw (\x,0) -- (\x,-0.2);  % Tick marks on timeline
+				\node[below] at (\x+0.3,-0.2) {\label};  % Time labels below the timeline
+			}
+			
+			\draw (0,0.2) -- (0,-0.2);
+			\node[below] at (0,-0.2) {$T_0$};
+			\node[below,orange] at (0,0.7) {$T_0^x$};
+			% Draw arrows for the fixed leg cash flows (above the timeline)
+			\foreach \x in {2, 4, 6, 8, 10, 12} {
+				\draw[->, >=Latex, thick, black] (\x,0) -- (\x,-1.2);  % Upward arrows 
+			}
+			% Draw arrows for the floating leg cash flows (below the timeline)
+			\foreach \x/\index in {4/1, 8/2, 12/b} {
+				\draw[->, >=Latex, thick, orange, decorate, decoration={snake, amplitude=0.3mm}] (\x,0) -- (\x,1.2);  % Wobbly arrows
+				\node[below,orange] at (\x+0.3,+0.7) {$T^x_\index$};
+			}
+			% Add descriptions of the cash flow directions
+			\node[above] at (7,1.5) {Floating Leg Cash Flows};  % Description for fixed leg
+			\node[below] at (7,-1.5) {Fixed Leg Cash Flows};  % Description for floating leg
+		\end{tikzpicture}
+	\end{center}
+	
+	The value of the swap at any time $t$ before its inception $T_0$ is expressed as: 
+	
+	\begin{equation}
+		IRS(t) = \sum_{i=1}^b P(t,T_i^x)\tau(T_{i-1}^x,T_i^x)F(t,T_{i-1}^x,T_i^x) - \sum_{j=1}^c P(t,T_j)\tau(T_{j-1},T_j)K
+	\end{equation}
+	
+	If we want to know what is the equilibrium swap rate for any time $t<T_0$, we need to find such $K$ that the value of the swap is zero. Let us denote the equilibrium swap rate at time $t$ with $S_b^x(t)$. In the single-curve framework in which we are currently operating, we can derive for it a relatively simple expression:
+	\begin{equation}\label{eq:irs}
+		\begin{split}
+			IRS(t) &= \sum_{i=1}^b P(t,T_i^x)\tau(T_{i-1}^x,T_i^x)F(t,T_{i-1}^x,T_i^x) - \sum_{j=1}^c P(t,T_j)\tau(T_{j-1},T_j)S_b^x(t) = 0 \\
+			&\Rightarrow \sum_{i=1}^b P(t,T_i^x)\tau(T_{i-1}^x,T_i^x)F(t,T_{i-1}^x,T_i^x) = \sum_{j=1}^c P(t,T_j)\tau(T_{j-1},T_j)S_b^x(t)\\
+		\end{split}
+	\end{equation}
+	Let us remember the expression for the forward rate $F(t,T_{i-1},T_i)$: 
+	\begin{equation}
+		F(t,T_{i-1},T_i) = \frac{1}{\tau(T_{i-1},T_i)}\left(\frac{P(t,T_{i-1})}{P(t,T_i)} - 1\right)
+	\end{equation}
+	If we plug that in, on the left side of the expression we get a telescopic sum that will simplify:
+	\begin{equation}
+		\begin{gathered}
+			\sum_{i=1}^b P(t,T_i^x)\tau(T_{i-1}^x,T_i^x)\frac{1}{\tau(T_{i-1}^x,T_i^x)}\left(\frac{P(t,T_{i-1}^x)}{P(t,T_i^x)} - 1\right) = S_b^x(t)\sum_{j=1}^c P(t,T_j)\tau(T_{j-1},T_j)\\
+			\sum_{i=1}^b P(t,T_{i-1}^x) - P(t,T_i^x)= S_b^x(t)\sum_{j=1}^c P(t,T_j)\tau(T_{j-1},T_j)\\
+			P(t,T_0^x) - P(t,T_b^x) = S_b^x(t)\sum_{j=1}^c P(t,T_j)\tau(T_{j-1},T_j) \\
+			\Rightarrow S_b^x(t) = \frac{P(t,T_0^x) - P(t,T_b^x)}{\sum_{j=1}^c P(t,T_j)\tau(T_{j-1},T_j)}
+		\end{gathered}
+	\end{equation}
+	This means that we can calculate the value of our interest rate swap at any time $t<T_0$ also with the formula below:
+	\begin{equation}
+		IRS(t) = \left(\sum_{j=1}^c P(t,T_j)\tau(T_{j-1},T_j)\right) \left( S_b^x(t) - K \right)
+	\end{equation}
+	This will prove to be useful in the next steps when we will build the binomial tree of short rates and calculate the value of the swap in each scenario. 
+	
+	\subsection{Swaption}
+	
+	Swaptions, just like interest rate swaps, are a vital instrument in the interest rate derivatives market. A swaption, or a swap option, grants the holder the right, but not the obligation, to enter into an interest rate swap at a specified future date. Essentially, it combines the features of an option with the mechanics of a swap, providing market participants with powerful tools for managing interest rate risk and speculating on future interest rate movements. Swaptions are widely used by financial institutions to hedge against unfavorable shifts in interest rates or to take advantage of anticipated movements. For instance, if an investor fears that the interest rates might rise and thus create unfavorable conditions to enter into an interest rate swap in the future, the investor might opt to enter into a swaption contract which will have a positive payoff in the case that investor's fears materialize and the bonds sell off (interest rates go up).
+	
+	The payoff of the swaption contract at maturity $T$ is given by
+	\begin{equation}
+		\max\left( 0, IRS(T) \right) = \left(IRS(T)\right)^+.
+	\end{equation}
+	Let us assume that we are observing a 5-year IRS with a fixed rate $K$, and we wish to enter such a swap in two years' time. In case the interest rates rise, the value of the same swap contract (assuming unchanged $K$) will rise, therefore making us have to pay a non-negative price in case we want to enter the contract with the same fixed rate $K$. Swaptions were designed to have a positive payoff in case this happens, so the buyer of the swaption is protected against adverse movement in the interest rates. Our goal here is to value such a contract that allows us to enter into a swap at a future time. The maturity of the swaption $T$ corresponds to the start of the swap $T_0$, that is, $T=T_0$. The price of the swaption at time $t<T$ is the conditional risk-neutral expectation of the discounted payoff:
+	\begin{equation}
+		\begin{split}
+			Swaption(t) &= \condexpect{Q}{t}{D(t,T)\left(IRS(T)\right)^+} \\
+			&= \condexpect{Q}{t}{D(t,T)\left(\sum_{j=1}^c P(T,T_j)\tau(T_{j-1},T_j)\right) \left( S_b^x(T) - K \right)^+}
+		\end{split}
+	\end{equation}
+	
+	To compute the value of a swaption, one of the methods we can use is a binomial tree. The binomial tree approach is particularly useful because it allows for the modeling of the evolution of interest rates over time, incorporating the potential changes in rates at each step of the tree. This method provides a flexible framework for pricing, as it allows us to account for the volatility of interest rates and the possibility of exercising the option at various points (although we will only be looking at the European-type swaptions). In the following section, we will construct a binomial tree based on the calibrated Hull-White model parameters and demonstrate how this tree can be used to price the swaption.
+	
+	\subsection{Building the Lattice for $r_t$}
+	
+	If we want to calculate the value of the swap at any time $t$, we need to be able to calculate the price of a bond $P(t,T)$ for all $T\geq t$ (which is obvious from the formula for the IRS \eqref{eq:irs}). Additionally, it is clear from the Hull-White expression for the bond price \eqref{eq:hw_bond_price_full_expression}, that in order to do that we need to know the value of the short rate at time $t$, that is, $r_t$. To tackle that, in this work we decided to create a binomial tree representation of the underlying short-rate stochastic process given by the SDE
+	\begin{equation}
+		dr_t = k^*(\theta_t - r_t)dt + \sigma^* dW_t
+	\end{equation}
+	where parameters $(k^*,\sigma^*)$ are the outputs of the optimization of our Hull-White model to market data. 
+	
+	An approach was proposed in the lecture by Rotondi, F.~\cite{rotondi2024lecture} to discretize a process given by an SDE
+	\begin{equation}
+		dX_t = a(t,X_t)dt + b(t,T_t)dW_t,
+	\end{equation}
+	that allows us to retain the first two moments as the process $X_t$, that is, expectation and the variance. Additionally, we want the binomial tree to remain recombining, as the number of nodes would otherwise explode and our representation would become computationally intractable. To keep the tree recombining the increments in each step $\Delta X$ need to be dependent only on time and not on the value of the process $X_t$. The discretization of the process $X_t$ that retains the first two moments is defined by
+	\begin{equation}
+		\left\{
+		\begin{array}{l}
+			\hat{X}_{t+\Delta t } = \left\{
+			\begin{array}{l}
+				\hat{X}_t + \Delta X \text{ with probability } q\\
+				\hat{X}_t - \Delta X \text{ with probability } (1-q)\\
+			\end{array}
+			\right. \\
+			\hat{X}_0 = x_0 \in \mathbb{R}\\
+		\end{array}
+		\right.
+	\end{equation}
+	
+	where $\Delta X$ and $q$ are given by:
+	\begin{equation}
+		\begin{split}
+			&\Delta X = b(t,X_t)\Delta t \\
+			&q = \max\left\{ 0, \min \left\{ 1, \frac{1}{2}+\frac{a(t,X_t)\Delta t}{2\Delta X} \right\} \right\}.
+		\end{split}
+	\end{equation}
+	
+	In our case that would translate into:
+	\begin{equation}\label{eq:lattice}
+		\left\{
+		\begin{array}{l}
+			\hat{r}_{t+\Delta t } = \left\{
+			\begin{array}{l}
+				\hat{r}_t + \Delta r \text{ with probability } q\\
+				\hat{r}_t - \Delta r \text{ with probability } (1-q)\\
+			\end{array}
+			\right. \\
+			\hat{r}_0 = r_0 \in \mathbb{R}\\
+		\end{array}
+		\right.
+	\end{equation}
+	where $\Delta r$ and $q$ are given by:
+	\begin{equation}
+		\begin{split}
+			&\Delta r = \sigma^*\Delta t \\
+			&q = \max\left\{ 0, \min \left\{ 1, \frac{1}{2}+\frac{k^*(\theta_t - r_t) \Delta t}{2\Delta r} \right\} \right\}.
+		\end{split}
+	\end{equation}
+	
+	The increments $\Delta r$ are going to be constant in time because $\sigma^*$ is constant, which guarantees that our tree will be recombining. From the equations above it is obvious that the risk-neutral probability changes depending on time $t$ and value of the process $r_t$. This means that for each node of the lattice, we will need to calculate the risk-neutral probability $q_{i,j}$ of an up-move. In the illustration below one can see the notation we will use:
+	
+	%\begin{center}
+	%\begin{tikzpicture}[
+	%	level distance=3cm,
+	%	sibling distance=1.6cm,
+	%	edge from parent/.style={draw,-latex},
+	%	every node/.style={circle,draw,minimum size=0.8cm,fill=white!20},
+	%	grow=right
+	%	]
+	%	
+	%	% Root node
+	%	\node {$r_0$}
+	%	child {
+		%		node {$r_{1,2}$}
+		%		child {
+			%			node {$r_{2,3}$}
+			%			child {
+				%				node {$r_{3,4}$}
+				%			}
+			%			child {
+				%				node {$r_{3,3}$}
+				%			}
+			%		}
+		%		child {
+			%			node {$r_{2,2}$}
+			%			child {
+				%				node {$r_{3,3}$}
+				%			}
+			%			child {
+				%				node {$r_{3,3}$}
+				%			}
+			%		}
+		%	}
+	%	child {
+		%		node {$r_{1,1}$}
+		%		child {
+			%			node {$r_{2,2}$}
+			%			child {
+				%				node {$r_{3,3}$}
+				%			}
+			%			child {
+				%				node {$r_{3,2}$}
+				%			}
+			%		}
+		%		child {
+			%			node {$r_{2,1}$}
+			%			child {
+				%				node {$r_{3,2}$}
+				%			}
+			%			child {
+				%				node {$r_{3,1}$}
+				%			}
+			%		}
+		%	};
+	%	
+	%	% Labels for edges
+	%	\path (0,0) -- (2.5,1) node [midway, above]{$q_{0,0}$};
+	%	\node at (0.5,0.75) [above] {$p$};
+	%	\path (0,0) -- (2.5,-2) node [midway, above]{$1-q_{0,0}$};
+	%%	\path (0,0) -- (1,-1) node [midway, below, sloped] {$d$};
+	%%	\path (1,1) -- (2,2) node [midway, above, sloped] {$u$};
+	%%	\path (1,1) -- (2,0) node [midway, below, sloped] {$d$};
+	%%	\path (1,-1) -- (2,0) node [midway, above, sloped] {$u$};
+	%%	\path (1,-1) -- (2,-2) node [midway, below, sloped] {$d$};
+	%	
+	%\end{tikzpicture}
+	%\end{center}
+	
+	\begin{figure}[H]\label{fig:binomial_tree}
+		\begin{center}
+			\begin{tikzpicture}[scale=1.5]
+				
+				% Tree structure
+				%	\node[circle, draw=black] (start) at (0,0) {$r_{0,0}$};
+				\node[circle, draw=black] (start) at (0,0) {$r_{0,0}$};
+				\node[circle, draw=black] (u) at (1.5,0.8) {$r_{1,0}$};
+				\node[circle, draw=black] (d) at (1.5,-0.8) {$r_{1,1}$};
+				\node[circle, draw=black] (uu) at (3,1.6) {$r_{2,0}$};
+				\node[circle, draw=black] (ud) at (3,0) {$r_{2,1}$};
+				\node[circle, draw=black] (dd) at (3,-1.6) {$r_{2,2}$};
+				\node (topdots) at (4.25, 1.8) {$\dots\hspace{1cm}$};
+				\node at (4.25, 0) {$\dots\hspace{1cm}$};
+				\node (botdots) at (4.25, -1.8) {$\dots\hspace{1cm}$};
+				\node[circle, draw=black] (uuu) at (6,2.4) {$r_{n,0}$};
+				\node[circle, draw=black] (uud) at (6,1.4) {$r_{n,1}$};
+				\node at (5.5,0) {$\vdots$};
+				\node[circle, draw=black, minimum size=1cm, inner sep=0pt]  (udd) at (6,-1.4) {$r_{n,n-1}$};
+				\node[circle, draw=black, minimum size=1cm, inner sep=0pt] (ddd) at (6,-2.4) {$r_{n,n}$};
+				
+				% Connecting lines
+				%	\draw[-] (start) -- (u);
+				\draw[-] (start) -- (u) node[midway, above] {$q_{0,0}$};
+				\draw[-] (start) -- (d) node[midway, below] {$q_{0,0}'$};
+				\draw[-] (u) -- (uu) node[midway, above] {$q_{1,0}$};
+				\draw[-] (u) -- (ud) node[midway, below] {$q_{1,0}'$};
+				\draw[-] (d) -- (ud) node[midway, below] {$q_{1,1}$};
+				\draw[-] (d) -- (dd) node[midway, below] {$q_{1,1}'$};
+				\draw[-] (topdots) -- (uuu) node[midway, above] {$q_{n-1,0}$};
+				\draw[-] (topdots) -- (uud) node[midway, below] {$q_{n-1,0}'$};
+				\draw[-] (botdots) -- (udd) node[midway, above] {$q_{n-1,n-1}$};
+				\draw[-] (botdots) -- (ddd) node[midway, below] {$q_{n-1,n-1}'$};
+				
+			\end{tikzpicture}
+		\end{center}
+		\caption{Binomial tree representation of the process $r_t$}
+	\end{figure}
+	
+	where the probability of a down-move is given by $q_{i,j}' = 1-q_{i,j}$.
+	
+	For instance, if the process after the first step ends up in the node $r_{1,1}$, the risk-neutral probability that the process will end up in $r_{2,1}$ in the next step is denoted by $q_{1,1}$, while the probability that it will end up in the node $r_{2,2}$ is denoted by $q_{1,1}'=1-q_{1,1}$. Now that we are familiar with the tree structure we need to determine the value of our swaption. To do that, we will follow these steps:
+	
+	\begin{itemize}
+		\item For a given maturity $T$ of the swaption, we will pick the number of steps $n$ in which we will divide the tree. This gives us a set of $(n+1)$ times $\{t_0, t_1,...,t_n\}$, where $t_0 = 0$, $t_n=T$, and $\Delta t=\frac{T}{n}$.
+		\item Starting from $r_{0,0}=r_0$ observed in the market, we will populate the tree following equations \eqref{eq:lattice}.
+		\item Once the tree is populated, we can calculate the price $P(i\Delta t,S)$ for all $i\in\{0,1,...,n\}$ and $S\geq t$. That means we can calculate the IRS value in any of the nodes, but we will do so only in the last step $t_n=T$, which corresponds to the maturity of our swaption.
+		\item Once we calculate the IRS prices for each scenario in time $t_n=T$ we know that the price of swaption $s_{n,j}$ at its maturity is equal to its payoff: $$\max(0,IRS(t_n)).$$
+		\item To calculate the price of the swap for the nodes in the layer corresponding to time $t_{n-1}$ we will calculate the risk-neutral expectation of the discounted payoff:
+		\begin{equation}
+			s_{n-1,j} = e^{-r_{n-1,j}\Delta t }\left[ q_{n-1,j}s_{n,j} + (1-q_{n-1,j})s_{n,j-1} \right]
+		\end{equation}
+		\item We will repeat the procedure for the nodes in the third last layer of the tree and so on, working our way backward towards the root of the tree.
+		\item Once this procedure is done, the price of the swaption is what we have at the root of the tree: $$Swaption(0)=s_0=s_{0,0}.$$
+	\end{itemize}
+	
+	\section{Results}\label{results}
+	
+	In this section, we present the results of our swaption pricing using the binomial tree approach based on the calibrated Hull-White model. After calibrating the model parameters to the market data, we used the constructed binomial tree to be able to price swaptions with various maturities and strike rates. As an illustration, we present the results of pricing the 2Y European payer swaption with an underlying IRS with a maturity of 5 years, quarterly payments for both legs, and 3M EURIBOR as the reference rate for the floating leg.
+	
+	The prices generated by our model were then compared with the corresponding market prices obtained from Refinitiv. The comparison revealed that the swaption prices calculated using our approach were very close to the prices quoted on Refinitiv, with decreasing accuracy as we were moving further out-of-the-money. Specifically, the difference between the model-generated prices and Refinitiv's market prices for in-the-money or close-to-the-money swaptions was within acceptable tolerance levels, typically less than 5\% across the different strikes we analyzed (see graphical comparison of prices on the figure \ref{fig:swaption_prices}).
+	
+	\begin{figure}[H]\label{fig:swaption_prices}
+		\centering
+		\input{plots/swaption_price.pgf}
+		\caption{Comparison of the model prices and market prices taken from Refinitiv for the notional value $N=1$. We priced a 2Y payer swaption with an underlying IRS with 5Y maturity, quarterly payments, and 3M EURIBOR as a reference rate.}	\label{fig:swaption_price_comparison}
+	\end{figure}
+	
+	While the results are encouraging, it is important to note that this model is a simplification. Our calibration process consisted of trying to fine-tune two constants ($k$ and $\sigma$) to capture the complexity of the market, which is not a realistic expectation. In a more realistic setting, we would additionally need to introduce a multi-curve framework, which differentiates between the discount curve and the forward rate curve. Moreover, incorporating multiple risk factors, such as stochastic volatility or other interest rate models like the Libor Market Model (LMM), could further enhance the accuracy of pricing. These extensions would allow the model to more accurately reflect the nuances of market dynamics, especially under stressed conditions, and produce even more precise valuations.
+	
+	Overall, the high degree of accuracy in pricing swaptions with this simplified model demonstrates its practical utility, but further refinements would be required for more complex and real-world applications.
+	
+	\newpage
+	\section{Conclusion}\label{conclusion}
+	
+	In this work, we explored the use of the Hull-White model, calibrated to market data, for pricing interest rate derivatives, specifically swaptions. We began by selecting the Hull-White model, built upon the Vasicek framework, emphasizing its flexibility and suitability for capturing the dynamics of interest rates. The calibration process was executed using observed caplet prices, ensuring that the model was consistent with current market conditions.
+	
+	After obtaining the calibrated parameters, we constructed a binomial tree to represent the evolution of interest rates over time, incorporating the stochastic nature of the Hull-White model. This discrete framework allowed us to effectively price swaptions while maintaining an intuitive understanding of the interest rate paths.
+	
+	Our results demonstrated that the swaption prices generated by our model were closely aligned with the market prices obtained from Refinitiv, with discrepancies generally falling within acceptable tolerance levels. This close alignment underscores the accuracy of the Hull-White model, particularly when calibrated effectively, and validates the use of the binomial tree as a reliable tool for pricing swaptions.
+	
+	However, it is important to recognize that the model used in this work was simplified. For more precise and realistic pricing, especially under varying market conditions, future work could consider enhancements such as incorporating a multi-curve framework, which differentiates between the discount rate and the reference rate or introducing additional risk factors, such as stochastic volatility. These extensions would enable the model to better capture the complexities of interest rate markets, leading to even more accurate pricing of swaptions and other exotic derivatives.
+	
+	In summary, this work has shown that combining the Hull-White model's robustness with the structured simplicity of the binomial tree provides a powerful tool for pricing swaptions. Future research could expand this methodology to more complex derivatives or explore alternative numerical methods to further improve computational efficiency and pricing accuracy.
+	
+	\newpage
+	\appendix
+	\section{Jupyter Notebook Implementation}
+	
+	The implementation of the calibration and swaption pricing can be found under the following link:
+	
+	\url{https://colab.research.google.com/drive/1M-CqLrTAJJ4lelp9nTbWoAhFJPNjVU6T?usp=sharing}
+	
+	\section{Expression Derivation for $\theta_t$}
+	
+	We start from the price of the bond and the expression that connects the forward rate and the bond price:
+	
+	\begin{equation}
+		\begin{split}
+			P(t,T) = A(t,T)e^{-B(t,T)r_t} \\
+			f(t,T) = -\frac{\partial}{\partial T}\ln P(t,T)
+		\end{split}
+	\end{equation}
+	
+	Now we want to determine the differential of the forward rate $df(t,T)$, and to do that we will use Ito's lemma. First we express the formula above for the forward rate as a function of $h(t,T) = \ln P(t,T)$:
+	\begin{equation}
+		f(t,T) = -\frac{\partial}{\partial T}h(t,T)
+	\end{equation}
+	It is important to note that for a fixed $T$, the forward rate $f(t,T)$ is a function of the value of the process $h(t,T)$. The partial derivatives from Ito's lemma are then:
+	\begin{equation}
+		\begin{split}
+			&\frac{\partial }{\partial t}\left(-\frac{\partial}{\partial T}h(t,T)\right)	= 0 \\
+			&\frac{\partial }{\partial h}\left(-\frac{\partial}{\partial T}h(t,T)\right)	=  -\frac{\partial }{\partial T}\left(\frac{\partial}{\partial h}h(t,T)\right) =  -\frac{\partial }{\partial T}\\
+			&\frac{\partial^2 }{\partial h^2}\left(-\frac{\partial}{\partial T}h(t,T)\right)	=  0\\
+		\end{split}
+	\end{equation}
+	Then we can plug that into the Ito's formula:
+	\begin{equation}
+		\begin{split}
+			df(t,T) &= \frac{\partial f}{\partial t}dt + \frac{\partial f}{\partial h}dh(t,T) + \frac{1}{2}\frac{\partial^2 f}{\partial h^2}(dh(t,T))^2 \\
+			df(t,T) &= \frac{\partial f}{\partial h}dh(t,T) = \frac{\partial f}{\partial h}dh(t,T) \\
+			df(t,T) &= -\frac{\partial }{\partial T} dh(t,T)
+		\end{split}
+	\end{equation}
+	This gives us the final expression:
+	\begin{equation}
+		df(t,T) = -\frac{\partial}{\partial T}d\ln P(t,T).
+	\end{equation}
+	The next step in the derivation is to remember that the expression for the price of the bond can be written as:
+	\begin{equation}\label{eq:bond_price}
+		P(t,T) = A(t,T)e^{-B(t,T)r_t}
+	\end{equation}
+	or equivalently,
+	\begin{equation}
+		\ln P(t,T) = \ln A(t,T) -B(t,T)r_t.
+	\end{equation}
+	Now we are interested in obtaining the differential form for $\ln P(t,T)$. We will do that again by employing Ito's formula, as $\ln P(t,T)$ is a function of time and the short rate $r_t$:
+	\begin{equation}
+		\begin{split}
+			d\ln P(t,T) &= \frac{\partial}{\partial t}\left(\ln A(t,T) - B(t,T)r_t\right)dt - B(t,T)dr_t + \frac{1}{2}\cdot 0 \cdot (dr_t)^2 \\
+			d\ln P(t,T) &= \left(\frac{1}{A(t,T)}\frac{\partial}{\partial t}A(t,T) - \frac{\partial}{\partial t}B(t,T)r_t\right)dt - B(t,T)\left( \gamma(t,T)dt+\sigma(t,T)dW_t \right)
+		\end{split}
+	\end{equation}
+	where $\gamma(t,T)$ is the drift of the short rate process and $\sigma(t,T)$ is its volatility. We can now combine the terms that belong to the drift of $\ln P(t,T)$ and those belonging to its volatility:
+	\begin{equation}
+		d\ln P(t,T) = (\cdots)dt - B(t,T)\sigma(t,T)dW_t
+	\end{equation}
+	To obtain the differential of the forward rate, we need to take the derivative with respect to $T$ of both sides:
+	\begin{equation}
+		\begin{split}
+			-\frac{\partial}{\partial T}d\ln P(t,T) &= (\cdots)dt + \frac{\partial}{\partial T}(B(t,T)\sigma(t,T))dW_t \\
+			df(t,T) &= (\cdots)dt + \frac{\partial}{\partial T}(B(t,T)\sigma(t,T))dW_t \\
+		\end{split}
+	\end{equation}
+	When it comes to models belonging to the HJM framework it is important to remember that volatility of the instantaneous forward rate is the \textit{king}. By knowing the volatility term, we can obtain the drift term of the short rate if we want it to fit the initial term structure \eqref{eq:hjmdrift}. The above derivation was for a general case where the bond price follows the equation \eqref{eq:bond_price}. For the case of the Hull-White model (extended Vasicek), we know that is indeed the case, moreover, we know that the volatility of the short rate is constant $\sigma(t,T)=\sigma$. Notice that when it comes to expressions for $A(t,T)$ and $B(t,T)$, we only need the expression for $B(t,T)$, and that expression is the following:
+	
+	\begin{equation}
+		B(t, T)=\frac{1}{k}\left[1-e^{-k(T-t)}\right]
+	\end{equation}
+	Let us denote the volatility of the instantaneous forward rate with $\sigma_f(t,T)$ and its drift with $\alpha(t,T)$, where for the one-dimensional case:
+	\begin{equation}
+		\begin{split}
+			\sigma_f(t,T)&= \frac{\partial}{\partial T}(B(t,T)\sigma(t,T)) = \sigma e^{-k(T-t)} \\
+			\alpha(t,T) &= \sigma_f(t,T)\int_t^T\sigma_f(t,u)du
+		\end{split}
+	\end{equation}
+	Let us now find the expression for $\alpha(t,T)$:
+	\begin{equation}
+		\begin{split}
+			\alpha(t,T) &= \sigma^2e^{-k(T-t)}\int_t^Te^{-k(u-t)}du \\
+			&= -\sigma^2e^{-k(T-t)}\frac{1}{k}\left(e^{-k(u-t)}\right)\bigg|_t^T \\
+			&= -\sigma^2e^{-k(T-t)}\frac{1}{k}(e^{-k(T-t)} - 1) \\
+			&= \frac{\sigma^2}{k}(e^{-k(T-t)}-e^{-2k(T-t)}) \\
+		\end{split}
+	\end{equation}
+	Now we can plug that back into the SDE for the instantaneous forward rate in the HJM case:
+	\begin{equation}
+		\begin{split}
+			df(t,T) &= \alpha(t,T)dt + \sigma_f(t,T)dW_t \\
+			df(t,T) &= \frac{\sigma^2}{k}(e^{-k(T-t)}-e^{-2k(T-t)}) dt + \sigma e^{-k(T-t)} dW_t.
+		\end{split}
+	\end{equation}
+	To get an expression for $f(t,T)$ we need to integrate the whole expression:
+	\begin{equation}\label{eq:inst_fwd}
+		\begin{split}
+			f(t,T) &= f(0,T) + \frac{\sigma^2}{k}\int_0^t(e^{-k(T-u)}-e^{-2k(T-u)}) du + \sigma \int_0^t e^{-k(T-u)} dW_u \\
+			f(t,T) &= f(0,T) + \frac{\sigma^2}{k} \left( \frac{e^{-k(T-t)} - e^{-kT}}{k} - \frac{e^{-2k(T-t)} - e^{-2kT}}{2k} \right) + \sigma \int_0^t e^{-k(T-u)} dW_u.
+		\end{split}
+	\end{equation}
+	Having the expression for $f(t,T)$, we can easily get the expression for $r_t=r(t)$, which we will use later:
+	\begin{equation}\label{eq:rt_uselater}
+		\begin{split}
+			r(t) = f(t,t)& = f(0,t) + \frac{\sigma^2}{k} \left( \frac{1 - e^{-kt}}{k} - \frac{1 - e^{-2kt}}{2k} \right) + \sigma \int_0^t e^{-k(t-u)} dW_u \\
+			r(t) &= f(0,t) + \frac{\sigma^2}{2k^2} \left( 2 - 2e^{-kt} - 1 + e^{-2kt} \right) + \sigma \int_0^t e^{-k(t-u)} dW_u \\
+			r(t) &= f(0,t) + \frac{\sigma^2}{2k^2} \left( 1 - 2e^{-kt} + e^{-2kt} \right) + \sigma \int_0^t e^{-k(t-u)} dW_u \\
+		\end{split}
+	\end{equation}
+	This expression will be useful to us in the final step of the derivation for $\theta_t$. The goal of this derivation is to find the expression for the drift of our short rate. Above we have seen that the short rate $r(t)$ can be expressed in terms of $f(\cdot,\cdot)$ as $r(t)=f(t,t)$, so the expression for the differential of the short rate is then calculated as:
+	\begin{equation}
+		dr(t) = df(t,T)\bigg|_{T=t} + \frac{\partial}{\partial T}f(t,T)\bigg|_{T=t}dt
+	\end{equation}
+	since $f$ is a function of 2 variables. We have to take the partial derivative with respect to $T$ of the equation \eqref{eq:inst_fwd}:
+	\begin{equation}
+		\begin{split}
+			\frac{\partial}{\partial T}f(t,T) = &\frac{\partial}{\partial T}f(0,T) + \frac{\sigma^2}{k} \left( \frac{-ke^{-k(T-t)} + ke^{-kT}}{k} - \frac{-2ke^{-2k(T-t)} + 2k e^{-2kT}}{2k} \right) - k\sigma \int_0^t e^{-k(t-u)} dW_u \\
+			&= \frac{\partial}{\partial T}f(0,T) + \frac{\sigma^2}{k} \left( -e^{-k(T-t)} + e^{-kT} - e^{-2k(T-t)} + e^{-2kT} \right) - k\sigma \int_0^t e^{-k(T-u)} dW_u
+		\end{split}
+	\end{equation}
+	And we want to evaluate it at $T=t$:
+	\begin{equation}\label{eq:dr_part1}
+		\begin{split}
+			\frac{\partial}{\partial T}f(t,T)\bigg|_{T=t} &= \frac{\partial}{\partial t}f(0,t) + \frac{\sigma^2}{k} \left( -1 + e^{-kt} + 1 - e^{-2kt} \right) - k\sigma \int_0^t e^{-k(t-u)} dW_u \\
+			&= \frac{\partial}{\partial t}f(0,t) + \frac{\sigma^2}{k} \left( e^{-kt} - e^{-2kt} \right) - k\sigma \int_0^t e^{-k(t-u)} dW_u.
+		\end{split}
+	\end{equation}
+	The second ingredient we need is the expression for $df(t,T)$ evaluated at $T=t$, which is fairly simple to determine:
+	\begin{equation}\label{eq:dr_part2}
+		df(t,T) = \frac{\sigma^2}{k}(1-1) dt + \sigma dW_t = \sigma dW_t
+	\end{equation}
+	Now we can combine the expressions \eqref{eq:dr_part1} and \eqref{eq:dr_part2} to get an expression for the differential of $dr(t)$:
+	\begin{equation}
+		\begin{split}
+			dr(t) = \sigma dW_t + \left[ \frac{\partial}{\partial t}f(0,t) + \frac{\sigma^2}{k} \left( e^{-kt} - e^{-2kt} \right) - k\sigma \int_0^t e^{-k(t-u)} dW_u \right]dt \\
+			dr(t) = k\left[\frac{1}{k}\frac{\partial}{\partial t}f(0,t) + \frac{\sigma^2}{k^2} \left( e^{-kt} - e^{-2kt} \right) - \sigma \int_0^t e^{-k(t-u)} dW_u \right]dt + \sigma dW_t
+		\end{split}
+	\end{equation}
+	To get the final expression we need to utilize the equation \eqref{eq:rt_uselater} that we derived earlier. From there we can express the integral $k\sigma \int_0^t e^{-k(t-u)} dW_u$, and substitute it in the last equation.
+	\begin{equation}
+		\begin{split}
+			r(t) &= f(0,t) + \frac{\sigma^2}{2k^2} \left( 1 - 2e^{-kt} + e^{-2kt} \right) + \sigma \int_0^t e^{-k(t-u)} dW_u \\
+			&\Rightarrow -\sigma \int_0^t e^{-k(t-u)} dW_u = f(0,t) + \frac{\sigma^2}{2k^2} \left( 1 - 2e^{-kt} + e^{-2kt} \right) - r(t)
+		\end{split}
+	\end{equation}
+	After the substitution, we get the final expression:
+	\begin{equation}
+		\begin{split}
+			dr(t) &= k\left[\frac{1}{k}\frac{\partial}{\partial t}f(0,t) + \frac{\sigma^2}{k^2} \left( e^{-kt} - e^{-2kt} \right) + f(0,t) + \frac{\sigma^2}{2k^2} \left( 1 - 2e^{-kt} + e^{-2kt} \right) - r(t) \right]dt + \sigma dW_t \\
+			dr(t) &= k\left[f(0,t) + \frac{1}{k}\frac{\partial}{\partial t}f(0,t) + \frac{\sigma^2}{2k^2} \left( 1-e^{-2kt} \right) - r(t) \right]dt + \sigma dW_t \\
+			dr(t) &= k\left[\theta_t - r(t) \right]dt + \sigma dW_t 
+		\end{split}
+	\end{equation}
+	where $\theta_t$ is given by
+	\begin{equation}
+		\theta_t = f(0,t) + \frac{1}{k}\frac{\partial f(0,t)}{\partial t} + \frac{\sigma^2}{2k^2} \left( 1-e^{-2kt} \right).	
+	\end{equation}
+	With this, the derivation is completed. The process is quite lengthy, but elegant nonetheless. There is also a different approach one could use to arrive to the same result, but we chose to show the way which utilizes the result for the drift of the instantaneous forward rate given by the HJM framework.
+	
+	\newpage
+	\nocite{*}
+	\bibliographystyle{plain}
+	\bibliography{references}
+	
+\end{document}

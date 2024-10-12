@@ -15,42 +15,43 @@ This repository contains the thesis **"Application of the Heath-Jarrow-Morton Fr
 
 The thesis provides an in-depth exploration of the Hull-White model, extending the Vasicek short-rate model, to price interest rate derivatives like caplets and swaptions. Below are some of the key sections:
 
-#### **Hull-White Model**:  
+#### **Hull-White Model** 
 The Hull-White model is an extension of the Vasicek model with a time-dependent mean reversion level for the short rate $r_t$:
 
 $$dr_t = k(\theta_t - r_t)dt + \sigma dW_t$$
 
 where $\theta_t$ is the time-dependent mean-reversion level derived as:
-$$
-\theta_t = f(0,t) + \frac{1}{k} \frac{\partial f(0,t)}{\partial t} + \frac{\sigma^2}{2k^2} \left(1 - e^{-2kt}\right)
-$$
+$$\theta_t = f(0,t) + \frac{1}{k} \frac{\partial f(0,t)}{\partial t} + \frac{\sigma^2}{2k^2} \left(1 - e^{-2kt}\right)$$
 
 This flexibility allows the model to fit the initial term structure of interest rates more accurately.
 
-- **Caplet and Cap Pricing**:  
-   Caplets are priced within the Hull-White framework using the relationship between caplets and zero-coupon bond put options. For example, the price of a caplet can be expressed as:
-   $$
-   Cpl(t, T_i, T_{i+1}) = N(1 + K \tau_i) ZBP(t, T_i, T_{i+1}, K')
-   $$
-   where $ZBP$ represents the zero-coupon bond put option price under the Hull-White model, and the cap price is the sum of its component caplets:
-   $$
-   Cap(t) = \sum_{i=1}^{b} Cpl(t, T_{i-1}, T_i)
-   $$
+**Caplet and Cap Pricing**:  
+Caplets are priced within the Hull-White framework using the relationship between caplets and zero-coupon bond put options. For example, the price of a caplet can be expressed as:
 
-- **Model Calibration**:  
-   The Hull-White model parameters, specifically the mean reversion rate $k$ and volatility $\sigma$, are calibrated to market data using an optimization process to minimize the error between market-observed caplet prices and model prices. The objective function for calibration is:
-   $$
-   \Theta = \arg \min_{(k, \sigma)} \sum_{i=0}^{L} \left[ Cap_{HW}^i(0, T_b, N, K) - Cap_{Black}^i(0, T_b, N, K) \right]^2
-   $$
-   where $Cap_{HW}$ represents the Hull-White cap prices, and $Cap_{Black}$ are the market cap prices using Black's model.
+$$Cpl(t, T_i, T_{i+1}) = N(1 + K \tau_i) ZBP(t, T_i, T_{i+1}, K')$$
 
-- **Swaption Pricing**:  
-   The thesis also delves into swaption pricing using a binomial tree for the short-rate process. The price of a swaption is computed as:
-   $$Swaption(t) = \mathbb{E}_t^\mathbb{Q} \left[ D(t,T) (IRS(T))^+ \right]$$
-   where $IRS(T)$ is the value of the interest rate swap at maturity $T$, and the binomial tree is built using the discretized form of the Hull-White process.
+where $ZBP$ represents the zero-coupon bond put option price under the Hull-White model, and the cap price is the sum of its component caplets:
 
-- **Results**:  
-   The calibrated model was able to match market prices for interest rate derivatives with high accuracy, particularly for at-the-money and in-the-money swaptions. The results demonstrate the practicality of the Hull-White model for real-world financial applications, though improvements (e.g., multi-curve frameworks) would further enhance performance.
+$$Cap(t) = \sum_{i=1}^{b} Cpl(t, T_{i-1}, T_i)$$
+
+**Model Calibration**:  
+The Hull-White model parameters, specifically the mean reversion rate $k$ and volatility $\sigma$, are calibrated to market data using an optimization process to minimize the error between market-observed caplet prices and model prices. The objective function for calibration is:
+$$\Theta = \arg \min_{(k, \sigma)} \sum_{i=0}^{L} \left[ Cap_{HW}^i(0, T_b, N, K) - Cap_{Black}^i(0, T_b, N, K) \right]^2$$
+where $Cap_{HW}$ represents the Hull-White cap prices, and $Cap_{Black}$ are the market cap prices using Black's model. Below you can find a few generated paths of the the short rate $r_t$ with the calibrated parameters:
+
+![Paths](imgs/paths.png)
+
+**Swaption Pricing**:  
+The thesis also delves into swaption pricing using a binomial tree for the short-rate process. The price of a swaption is computed as:
+$$Swaption(t) = \mathbb{E}_t^\mathbb{Q} \left[ D(t,T) (IRS(T))^+ \right]$$
+where $IRS(T)$ is the value of the interest rate swap at maturity $T$, and the binomial tree is built using the discretized form of the Hull-White process.
+
+**Results**:  
+The calibrated model was able to match market prices for interest rate derivatives with high accuracy, particularly for at-the-money and in-the-money swaptions (see the plot below).
+
+![Swaption prices](imgs/swaption_prices.png) 
+
+The results demonstrate the practicality of the Hull-White model for real-world financial applications, though improvements (e.g., multi-curve frameworks) would further enhance performance.
 
 ### 2. **Code** (`notebooks/` folder)
 
