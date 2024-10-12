@@ -17,11 +17,13 @@ The thesis provides an in-depth exploration of the Hull-White model, extending t
 
 - **Hull-White Model**:  
    The Hull-White model is an extension of the Vasicek model with a time-dependent mean reversion level for the short rate $r_t$:
-   $$dr_t = k(\theta_t - r_t)dt + \sigma dW_t$$
+   ```math
+   dr_t = k(\theta_t - r_t)dt + \sigma dW_t
+   ```
    where $\theta_t$ is the time-dependent mean-reversion level derived as:
-   $$
+   ```math
    \theta_t = f(0,t) + \frac{1}{k} \frac{\partial f(0,t)}{\partial t} + \frac{\sigma^2}{2k^2} \left(1 - e^{-2kt}\right)
-   $$
+   ```
    This flexibility allows the model to fit the initial term structure of interest rates more accurately.
 
 - **Caplet and Cap Pricing**:  
@@ -56,7 +58,7 @@ The code accompanying the thesis implements the Hull-White model calibration and
 - **Model Calibration**: Fits the Hull-White model to market cap and swaption data using the Nelder-Mead optimization method.
 - **Swaption Pricing**: Builds a binomial tree to represent the short-rate dynamics and prices European swaptions.
 
-You can access the complete implementation in this Jupyter notebook [here](https://colab.research.google.com/drive/1M-CqLrTAJJ4lelp9nTbWoAhFJPNjVU6T).
+You can also access the complete implementation in this Jupyter notebook [here](https://colab.research.google.com/drive/1M-CqLrTAJJ4lelp9nTbWoAhFJPNjVU6T).
 
 ## Installation & Usage
 
@@ -64,5 +66,5 @@ To run the notebook and experiment with the code:
 
 1. **Clone this repository**:
    ```bash
-   git clone https://github.com/yourusername/HJM-interest-rate-derivatives.git
-   cd HJM-interest-rate-derivatives
+   git clone https://github.com/almer101/bocconi-thesis.git
+   cd bocconi-thesis
