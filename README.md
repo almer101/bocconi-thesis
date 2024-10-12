@@ -13,18 +13,19 @@ This repository contains the thesis **"Application of the Heath-Jarrow-Morton Fr
 
 ### 1. **Thesis** (`thesis.pdf`)
 
-The thesis provides an in-depth exploration of the Hull-White model, extending the Vasicek short-rate model, to price interest rate derivatives like caplets and swaptions. Below are some of the key sections and formulas:
+The thesis provides an in-depth exploration of the Hull-White model, extending the Vasicek short-rate model, to price interest rate derivatives like caplets and swaptions. Below are some of the key sections:
 
-- **Hull-White Model**:  
-   The Hull-White model is an extension of the Vasicek model with a time-dependent mean reversion level for the short rate $r_t$:
-   
-   $$dr_t = k(\theta_t - r_t)dt + \sigma dW_t$$
-   
-   where $\theta_t$ is the time-dependent mean-reversion level derived as:
-   ```math
-   \theta_t = f(0,t) + \frac{1}{k} \frac{\partial f(0,t)}{\partial t} + \frac{\sigma^2}{2k^2} \left(1 - e^{-2kt}\right)
-   ```
-   This flexibility allows the model to fit the initial term structure of interest rates more accurately.
+#### **Hull-White Model**:  
+The Hull-White model is an extension of the Vasicek model with a time-dependent mean reversion level for the short rate $r_t$:
+
+$$dr_t = k(\theta_t - r_t)dt + \sigma dW_t$$
+
+where $\theta_t$ is the time-dependent mean-reversion level derived as:
+$$
+\theta_t = f(0,t) + \frac{1}{k} \frac{\partial f(0,t)}{\partial t} + \frac{\sigma^2}{2k^2} \left(1 - e^{-2kt}\right)
+$$
+
+This flexibility allows the model to fit the initial term structure of interest rates more accurately.
 
 - **Caplet and Cap Pricing**:  
    Caplets are priced within the Hull-White framework using the relationship between caplets and zero-coupon bond put options. For example, the price of a caplet can be expressed as:
