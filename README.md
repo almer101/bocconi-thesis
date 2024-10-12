@@ -27,9 +27,9 @@ $$\theta_t = f(0,t) + \frac{1}{k} \frac{\partial f(0,t)}{\partial t} + \frac{\si
 This flexibility allows the model to fit the initial term structure of interest rates more accurately.
 
 **Caplet and Cap Pricing**:  
-Caplets are priced within the Hull-White framework using the relationship between caplets and zero-coupon bond put options. For example, the price of a caplet can be expressed as:
+Caplets are priced within the Hull-White framework using the relationship between caplets and zero-coupon bond put options. For example, the price of a caplet can be expressed in terms of the zero-coupon bond put option price:
 
-$$\mathbf{Cpl}(t,T_{i-1},T_i,N,K) = N'\cdot\mathbb{E}_t^\mathbb{Q}\left[D(t,T_{i-1})\left(K' - P(T_{i-1},T_i)\right)^+\right] = N'\cdot\mathbf{ZBP}(t,T_{i-1},T_i,K')$$
+$$\mathbf{Cpl}(t,T_{i-1},T_i,N,K) = N'\cdot\mathbb{E}_t\left[D(t,T_{i-1})\left(K' - P(T_{i-1},T_i)\right)^+\right] = N'\cdot\mathbf{ZBP}(t,T_{i-1},T_i,K')$$
 
 where $ZBP$ represents the zero-coupon bond put option price under the Hull-White model, and the cap price is the sum of its component caplets:
 
