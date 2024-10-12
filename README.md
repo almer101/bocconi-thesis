@@ -29,7 +29,7 @@ This flexibility allows the model to fit the initial term structure of interest 
 **Caplet and Cap Pricing**:  
 Caplets are priced within the Hull-White framework using the relationship between caplets and zero-coupon bond put options. For example, the price of a caplet can be expressed as:
 
-$$\mathbf{Cpl}(t,&T_{i-1},T_i,N,K) = N'\cdot\condexpect{Q}{t}{D(t,T_{i-1})\left(K' - P(T_{i-1},T_i)\right)^+} = N'\cdot\mathbf{ZBP}(t,T_{i-1},T_i,K')$$
+$$\mathbf{Cpl}(t,T_{i-1},T_i,N,K) = N'\cdot\condexpect{Q}{t}{D(t,T_{i-1})\left(K' - P(T_{i-1},T_i)\right)^+} = N'\cdot\mathbf{ZBP}(t,T_{i-1},T_i,K')$$
 
 where $ZBP$ represents the zero-coupon bond put option price under the Hull-White model, and the cap price is the sum of its component caplets:
 
@@ -40,7 +40,7 @@ The Hull-White model parameters, specifically the mean reversion rate $k$ and vo
 
 $$\mathbf{\Theta} = \arg\min_{(k,\sigma)}\sum_{i=0}^L \left[\mathbf{Cap}^{HW}_i(0,T_b,N,K) - \mathbf{Cap}^{Black}_i(0,T_b,N,K)\right]^2$$
 
-where $Cap_{HW}$ represents the Hull-White cap prices, and $Cap_{Black}$ are the market cap prices using Black's model. Below you can find a few generated paths of the the short rate $r_t$ with the calibrated parameters:
+where $\mathbf{Cap}^{HW}$ represents the Hull-White cap prices, and $\mathbf{Cap}^{Black}$ are the market cap prices using Black's model. Below you can find a few generated paths of the the short rate $r_t$ with the calibrated parameters:
 
 ![Paths](imgs/paths.png)
 
