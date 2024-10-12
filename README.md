@@ -21,6 +21,7 @@ The Hull-White model is an extension of the Vasicek model with a time-dependent 
 $$dr_t = k(\theta_t - r_t)dt + \sigma dW_t$$
 
 where $\theta_t$ is the time-dependent mean-reversion level derived as:
+
 $$\theta_t = f(0,t) + \frac{1}{k} \frac{\partial f(0,t)}{\partial t} + \frac{\sigma^2}{2k^2} \left(1 - e^{-2kt}\right)$$
 
 This flexibility allows the model to fit the initial term structure of interest rates more accurately.
@@ -28,22 +29,26 @@ This flexibility allows the model to fit the initial term structure of interest 
 **Caplet and Cap Pricing**:  
 Caplets are priced within the Hull-White framework using the relationship between caplets and zero-coupon bond put options. For example, the price of a caplet can be expressed as:
 
-$$Cpl(t, T_i, T_{i+1}) = N(1 + K \tau_i) ZBP(t, T_i, T_{i+1}, K')$$
+$$\mathbf{Cpl}(t,&T_{i-1},T_i,N,K) = N'\cdot\condexpect{Q}{t}{D(t,T_{i-1})\left(K' - P(T_{i-1},T_i)\right)^+} = N'\cdot\mathbf{ZBP}(t,T_{i-1},T_i,K')$$
 
 where $ZBP$ represents the zero-coupon bond put option price under the Hull-White model, and the cap price is the sum of its component caplets:
 
-$$Cap(t) = \sum_{i=1}^{b} Cpl(t, T_{i-1}, T_i)$$
+$$\mathbf{Cap}(t,T_b,N,K) = \sum_{i=1}^b \mathbf{Cpl}(t,T_{i-1},T_i,N,K)$$
 
 **Model Calibration**:  
 The Hull-White model parameters, specifically the mean reversion rate $k$ and volatility $\sigma$, are calibrated to market data using an optimization process to minimize the error between market-observed caplet prices and model prices. The objective function for calibration is:
-$$\Theta = \arg \min_{(k, \sigma)} \sum_{i=0}^{L} \left[ Cap_{HW}^i(0, T_b, N, K) - Cap_{Black}^i(0, T_b, N, K) \right]^2$$
+
+$$\mathbf{\Theta} = \arg\min_{(k,\sigma)}\sum_{i=0}^L \left[\mathbf{Cap}^{HW}_i(0,T_b,N,K) - \mathbf{Cap}^{Black}_i(0,T_b,N,K)\right]^2$$
+
 where $Cap_{HW}$ represents the Hull-White cap prices, and $Cap_{Black}$ are the market cap prices using Black's model. Below you can find a few generated paths of the the short rate $r_t$ with the calibrated parameters:
 
 ![Paths](imgs/paths.png)
 
 **Swaption Pricing**:  
 The thesis also delves into swaption pricing using a binomial tree for the short-rate process. The price of a swaption is computed as:
+
 $$Swaption(t) = \mathbb{E}_t^\mathbb{Q} \left[ D(t,T) (IRS(T))^+ \right]$$
+
 where $IRS(T)$ is the value of the interest rate swap at maturity $T$, and the binomial tree is built using the discretized form of the Hull-White process.
 
 **Results**:  
