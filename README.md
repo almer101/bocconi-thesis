@@ -17,9 +17,9 @@ The thesis provides an in-depth exploration of the Hull-White model, extending t
 
 - **Hull-White Model**:  
    The Hull-White model is an extension of the Vasicek model with a time-dependent mean reversion level for the short rate $r_t$:
-   ```math
-   dr_t = k(\theta_t - r_t)dt + \sigma dW_t
-   ```
+   
+   $$dr_t = k(\theta_t - r_t)dt + \sigma dW_t$$
+   
    where $\theta_t$ is the time-dependent mean-reversion level derived as:
    ```math
    \theta_t = f(0,t) + \frac{1}{k} \frac{\partial f(0,t)}{\partial t} + \frac{\sigma^2}{2k^2} \left(1 - e^{-2kt}\right)
