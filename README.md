@@ -29,7 +29,7 @@ This flexibility allows the model to fit the initial term structure of interest 
 **Caplet and Cap Pricing**:  
 Caplets are priced within the Hull-White framework using the relationship between caplets and zero-coupon bond put options. For example, the price of a caplet can be expressed in terms of the zero-coupon bond put option price:
 
-$$\mathbf{Cpl}(t,T_{i-1},T_i,N,K) = N'\cdot\mathbb{E}_t\left[D(t,T_{i-1})\left(K' - P(T_{i-1},T_i)\right)^+\right] = N'\cdot\mathbf{ZBP}(t,T_{i-1},T_i,K')$$
+$$\mathbf{Cpl}(t,T_{i-1},T_i,N,K) = N'\cdot\mathbb{E}\left[D(t,T_{i-1})\left(K' - P(T_{i-1},T_i)\right)^+\right] = N'\cdot\mathbf{ZBP}(t,T_{i-1},T_i,K')$$
 
 where $ZBP$ represents the zero-coupon bond put option price under the Hull-White model, and the cap price is the sum of its component caplets:
 
@@ -42,7 +42,7 @@ $$\mathbf{\Theta} = \arg\min_{(k,\sigma)}\sum_{i=0}^L \left[\mathbf{Cap}^{HW}_i(
 
 where $\mathbf{Cap}^{HW}$ represents the Hull-White cap prices, and $\mathbf{Cap}^{Black}$ are the market cap prices using Black's model. Below you can find a few generated paths of the the short rate $r_t$ with the calibrated parameters:
 
-![Paths](imgs/paths.png)
+<img src="imgs/paths.png" width="600">
 
 **Swaption Pricing**:  
 The thesis also delves into swaption pricing using a binomial tree for the short-rate process. The price of a swaption is computed as:
@@ -54,7 +54,7 @@ where $IRS(T)$ is the value of the interest rate swap at maturity $T$, and the b
 **Results**:  
 The calibrated model was able to match market prices for interest rate derivatives with high accuracy, particularly for at-the-money and in-the-money swaptions (see the plot below).
 
-![Swaption prices](imgs/swaption_prices.png) 
+<img src="imgs/swaption_prices.png" width="600">
 
 The results demonstrate the practicality of the Hull-White model for real-world financial applications, though improvements (e.g., multi-curve frameworks) would further enhance performance.
 
